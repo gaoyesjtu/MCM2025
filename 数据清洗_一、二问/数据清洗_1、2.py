@@ -1,8 +1,3 @@
-"""
-文件: process_data_w.py
-用途: 提取第一问所需三列，并将孕周从 '11w+3' 或 '11w' 转为连续周数
-输出: 男胎数据_处理后.csv
-"""
 
 import re
 import sys
