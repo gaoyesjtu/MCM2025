@@ -30,7 +30,7 @@ def week_to_float(val):
     return None  # 不符合格式时返回None
 
 def main():
-    in_file  = "D:\pycharm_codes\MCM2025_codes\男胎数据.csv"
+    in_file  = r"D:\pycharm_codes\MCM2025_codes\原始数据与题面\boys_final_cleaned_data.csv"
     out_file = "男胎数据问题一、二.csv"
 
     # 读取并清理列名（去除BOM与空白）
