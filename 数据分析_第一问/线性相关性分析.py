@@ -127,3 +127,55 @@ if __name__ == "__main__":
         use_hexbin=False,   # 用六边形密度，直观显示密集区
         gridsize=40
     )
+# ====== 多元线性回归模块（精简版：仅 r 与 R²） ======
+def multiple_linear_regression(df, y_col, x_cols,
+                               title="多元线性回归：实际值 vs 预测值",
+                               out_path_fig="MLR_实际_vs_预测.png"):
+    import numpy as np
+    import statsmodels.api as sm
+    import matplotlib.pyplot as plt
+    from scipy import stats
+
+    data = df[[y_col] + x_cols].dropna()
+    y = data[y_col].to_numpy()
+    X = sm.add_constant(data[x_cols])
+
+    model = sm.OLS(y, X).fit()
+    y_hat = model.fittedvalues.to_numpy()
+
+    r, _ = stats.pearsonr(y, y_hat)
+    r2 = float(model.rsquared)
+
+    print(f"r = {r:.6f}, R² = {r2:.6f}")
+
+    fig, ax = plt.subplots(figsize=(6.2, 4.8))
+    ax.scatter(y_hat, y, s=16, alpha=0.7)
+    lo, hi = min(y_hat.min(), y.min()), max(y_hat.max(), y.max())
+    ax.plot([lo, hi], [lo, hi], lw=1)
+    ax.set_xlabel("预测值 $\\hat{y}$")
+    ax.set_ylabel("实际值 $y$")
+    ax.set_title(title)
+    ax.text(0.02, 0.98, f"r = {r:.3f}   R² = {r2:.3f}   n = {len(data)}",
+            transform=ax.transAxes, va="top", ha="left", fontsize=10,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#999", alpha=0.9))
+
+    fig.tight_layout()
+    if out_path_fig:
+        fig.savefig(out_path_fig, bbox_inches="tight")
+    plt.show()
+
+    return {"r": float(r), "R2": float(r2), "样本数": int(len(data))}
+
+
+if __name__ == "__main__":
+    try:
+        X_cols_demo = [COL_X1, COL_X2]
+        multiple_linear_regression(
+            df=df,
+            y_col=COL_Y,
+            x_cols=X_cols_demo,
+            title=f"多元线性回归：{COL_Y} ~ {X_cols_demo}（实际值 vs 预测值）",
+            out_path_fig="图_C_多元线性回归.pdf"
+        )
+    except Exception as e:
+        print("多元线性回归示例运行失败：", e)

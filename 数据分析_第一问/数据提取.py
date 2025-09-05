@@ -1,6 +1,6 @@
 import pandas as pd
 def main():
-    in_file  = "D:\pycharm_codes\MCM2025_codes\男胎数据_final.csv"
+    in_file  = r'D:\pycharm_codes\MCM2025_codes\clean_boys_data.csv'
     out_file = "男胎数据_问题一.csv"
 
     # 读取数据
