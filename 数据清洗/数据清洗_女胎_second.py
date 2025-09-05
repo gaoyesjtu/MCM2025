@@ -10,11 +10,9 @@ def find_column(cols, keywords):
 def main():
     in_file  = "D:\pycharm_codes\MCM2025_codes\数据清洗\女胎数据1.csv"
     out_file = "女胎数据_去重后.csv"
-
     # 读取数据
     df = pd.read_csv(in_file, encoding="utf-8-sig")
     df.columns = [str(c).strip().lstrip("\ufeff") for c in df.columns]  # 清理列名
-    print("列名预览:", df.columns.tolist())  # 便于确认
 
     # 自动匹配列名
     col_code  = find_column(df.columns, ["孕妇代码"])
