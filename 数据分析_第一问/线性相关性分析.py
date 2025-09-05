@@ -1,60 +1,129 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
+"""
+偏相关可视化（论文风格）
+- 先对 X、Y 分别控制 Z（线性回归取残差）
+- 画 rX vs rY 的散点/六边形密度图
+- 叠加线性拟合线与 95% 置信带
+- 角标展示：偏相关 r、p 值、样本量 n
+"""
 import numpy as np
+import pandas as pd
 import statsmodels.api as sm
+from scipy import stats
 import matplotlib.pyplot as plt
 
-# === 字体配置（你已安装 Microsoft YaHei） ===
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+# ====== 全局图形风格（简洁清晰） ======
+plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']   # 你也可换成 'Arial'
 plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams['figure.dpi'] = 120                         # 交互查看更清晰
+plt.rcParams['savefig.dpi'] = 300                        # 导出图片 300dpi
 
-# === 数据路径 ===
+# ====== 数据路径与字段名 ======
 CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\数据分析_第一问\男胎数据_问题一.csv"
+COL_Y   = "Y染色体浓度"
+COL_X1  = "检测孕周"
+COL_X2  = "孕妇BMI"
 
-# === 读取数据 ===
-df = pd.read_csv(CSV_PATH, encoding="utf-8")
-y   = df["Y染色体浓度"].to_numpy()
-ga  = df["检测孕周"].to_numpy()
-bmi = df["孕妇BMI"].to_numpy()
+# ====== 工具函数 ======
+def residuals_after_control(v, z):
+    """对 v ~ [1, z] 回归后返回残差"""
+    X = sm.add_constant(z)
+    return v - sm.OLS(v, X, missing='drop').fit().fittedvalues
 
-# === 1. 控制 BMI，看检测孕周 ===
-X_bmi = sm.add_constant(bmi)
-resid_y = y - sm.OLS(y, X_bmi).fit().fittedvalues
-resid_ga = ga - sm.OLS(ga, X_bmi).fit().fittedvalues
-model_ga = sm.OLS(resid_y, sm.add_constant(resid_ga)).fit()
+def partial_scatter_plot(x, y, z,
+                         x_label="X（控制后的残差）",
+                         y_label="Y（控制后的残差）",
+                         title="部分回归图（控制后）",
+                         out_path=None,
+                         use_hexbin=False,
+                         gridsize=35):
+    """
+    画：控制 z 后 x↔y 的可视化 + 线性拟合线 + 95%CI + r/p/n 角标
+    """
+    # 丢缺失
+    df_ = pd.DataFrame({"x": x, "y": y, "z": z}).dropna()
+    x = df_["x"].to_numpy()
+    y = df_["y"].to_numpy()
+    z = df_["z"].to_numpy()
+    n = len(df_)
+    if n < 4:
+        raise ValueError("样本量过小，无法计算偏相关（n<4）。")
 
-plt.figure(figsize=(6,4))
-plt.scatter(resid_ga, resid_y, s=12, alpha=0.6, label="残差点")
-x_line = np.linspace(resid_ga.min(), resid_ga.max(), 200)
-y_line = model_ga.params[0] + model_ga.params[1]*x_line
-plt.plot(x_line, y_line, color="red", label="拟合线")
-plt.xlabel("检测孕周（控制BMI后的残差）")
-plt.ylabel("Y染色体浓度（控制BMI后的残差）")
-plt.title("控制BMI后：检测孕周与Y浓度的关系")
-plt.legend()
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
+    # 1) 残差
+    rx = residuals_after_control(x, z)
+    ry = residuals_after_control(y, z)
 
-print("控制BMI后：检测孕周系数 = %.4f, p=%.3e" % (model_ga.params[1], model_ga.pvalues[1]))
+    # 2) 偏相关（残差间 Pearson 相关）
+    r, p = stats.pearsonr(rx, ry)
 
-# === 2. 控制检测孕周，看BMI ===
-X_ga = sm.add_constant(ga)
-resid_y2 = y - sm.OLS(y, X_ga).fit().fittedvalues
-resid_bmi = bmi - sm.OLS(bmi, X_ga).fit().fittedvalues
-model_bmi = sm.OLS(resid_y2, sm.add_constant(resid_bmi)).fit()
+    # 3) 拟合线 + 95%CI（对 ry ~ [1, rx]）
+    X = sm.add_constant(rx)
+    fit = sm.OLS(ry, X).fit()
+    x_grid = np.linspace(np.nanmin(rx), np.nanmax(rx), 200)
+    Xg = sm.add_constant(x_grid)
+    pred = fit.get_prediction(Xg).summary_frame(alpha=0.05)  # mean_ci_lower/upper
+    y_hat = pred["mean"].to_numpy()
+    y_lo  = pred["mean_ci_lower"].to_numpy()
+    y_hi  = pred["mean_ci_upper"].to_numpy()
 
-plt.figure(figsize=(6,4))
-plt.scatter(resid_bmi, resid_y2, s=12, alpha=0.6, label="残差点")
-x_line = np.linspace(resid_bmi.min(), resid_bmi.max(), 200)
-y_line = model_bmi.params[0] + model_bmi.params[1]*x_line
-plt.plot(x_line, y_line, color="red", label="拟合线")
-plt.xlabel("孕妇BMI（控制检测孕周后的残差）")
-plt.ylabel("Y染色体浓度（控制检测孕周后的残差）")
-plt.title("控制检测孕周后：BMI与Y浓度的关系")
-plt.legend()
-plt.grid(alpha=0.3)
-plt.tight_layout()
-plt.show()
+    # 4) 作图
+    fig, ax = plt.subplots(figsize=(6.8, 4.6))
+    if use_hexbin:
+        hb = ax.hexbin(rx, ry, gridsize=gridsize, mincnt=1)
+        cbar = fig.colorbar(hb, ax=ax)
+        cbar.set_label("点密度")
+    else:
+        ax.scatter(rx, ry, s=14, alpha=0.65)
 
-print("控制检测孕周后：BMI系数 = %.4f, p=%.3e" % (model_bmi.params[1], model_bmi.pvalues[1]))
+    ax.plot(x_grid, y_hat, lw=2)              # 拟合线
+    ax.fill_between(x_grid, y_lo, y_hi, alpha=0.18, lw=0)  # 95%CI
+
+    ax.axhline(0, color="#888", lw=0.8)
+    ax.axvline(0, color="#888", lw=0.8)
+    ax.grid(alpha=0.3)
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+
+    # 角标：r / p / n
+    note = f"r = {r:.3f}   p = {p:.2e}   样本数 = {n}"
+    ax.text(0.02, 0.98, note, transform=ax.transAxes,
+            va="top", ha="left", fontsize=10,
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#999", alpha=0.9))
+
+    fig.tight_layout()
+    if out_path:
+        fig.savefig(out_path, bbox_inches="tight")
+    plt.show()
+
+    return {"r": r, "p": p, "n": n}
+
+# ====== 读取数据并出两张图 ======
+if __name__ == "__main__":
+    df = pd.read_csv(CSV_PATH, encoding="utf-8")
+
+    y   = df[COL_Y].to_numpy()
+    x1  = df[COL_X1].to_numpy()  # 例：检测孕周
+    x2  = df[COL_X2].to_numpy()  # 例：BMI
+
+    # A) 控制 BMI，考察“检测孕周 ↔ Y”
+    partial_scatter_plot(
+        x=x1, y=y, z=x2,
+        x_label=f"{COL_X1}（控制{COL_X2}后的残差）",
+        y_label=f"{COL_Y}（控制{COL_X2}后的残差）",
+        title=f"控制{COL_X2}后：{COL_X1} 与 {COL_Y}",
+        out_path="图_A_控制BMI_检测孕周_vs_Y浓度.pdf",
+        use_hexbin=False  # 点多时可改 True
+    )
+
+    # B) 控制 检测孕周，考察“BMI ↔ Y”
+    partial_scatter_plot(
+        x=x2, y=y, z=x1,
+        x_label=f"{COL_X2}（控制{COL_X1}后的残差）",
+        y_label=f"{COL_Y}（控制{COL_X1}后的残差）",
+        title=f"控制{COL_X1}后：{COL_X2} 与 {COL_Y}",
+        out_path="图_B_控制孕周_BMI_vs_Y浓度.pdf",
+        use_hexbin=False,   # 用六边形密度，直观显示密集区
+        gridsize=40
+    )
