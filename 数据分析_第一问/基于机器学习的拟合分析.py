@@ -12,11 +12,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\数据分析_第一问\男胎数据_问题一.csv"
+CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\clean_boys_data.csv"
 
 # === 读取数据 ===
 df = pd.read_csv(CSV_PATH, encoding="utf-8")
-X = df[["检测孕周", "孕妇BMI"]].to_numpy(dtype=np.float32)
+X = df[["检测孕周", "孕妇BMI","体重", "年龄"]].to_numpy(dtype=np.float32)
 y = df["Y染色体浓度"].to_numpy(dtype=np.float32)
 
 # === 划分训练/验证 ===
@@ -26,9 +26,9 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 # === 训练 XGBoost ===
 xgb = XGBRegressor(
-    n_estimators=700,
-    learning_rate=0.1,
-    max_depth=5,
+    n_estimators=500,
+    learning_rate=0.05,
+    max_depth=4,
     subsample=0.8,
     colsample_bytree=0.8,
     random_state=42,
@@ -42,14 +42,17 @@ print("Train  R² = %.3f" % r2_score(y_train, y_pred_tr))
 print("Train  RMSE = %.5f" % root_mean_squared_error(y_train, y_pred_tr))
 
 y_pred_val = xgb.predict(X_val)
+print("Valid  R² = %.3f" % r2_score(y_val, y_pred_val))
 print("Valid  RMSE = %.5f" % root_mean_squared_error(y_val, y_pred_val))
 
+'''
 # === 构建网格（用来画曲面） ===
 ga_range  = np.linspace(df["检测孕周"].min(), df["检测孕周"].max(), 50)
 bmi_range = np.linspace(df["孕妇BMI"].min(), df["孕妇BMI"].max(), 50)
 GA, BMI = np.meshgrid(ga_range, bmi_range)
 grid_X = np.c_[GA.ravel(), BMI.ravel()]
 grid_y = xgb.predict(grid_X).reshape(GA.shape)
+
 
 # =========================================================
 # 图 1（含曲面）：透明曲面 + 底面等高线
@@ -107,3 +110,4 @@ fig2.savefig("图2_仅散点.pdf", bbox_inches="tight")
 plt.close(fig2)
 
 print("已生成：图1_含曲面_清晰版.pdf, 图2_仅散点.pdf")
+'''

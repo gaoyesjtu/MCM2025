@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+检测孕周与平均 Y 浓度 (剔除 18–18.9、22–22.9，步长0.25)
+绘制折线图，显示总样本数，并加回归直线（不显示方程与 R²）
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +15,7 @@ rcParams["font.sans-serif"] = ["Microsoft YaHei"]  # 中文字体
 rcParams["axes.unicode_minus"] = False
 
 # === 读取数据文件 ===
-csv_path = "D:\pycharm_codes\MCM2025_codes\clean_boys_data.csv"  # ← 修改为你的文件路径
+csv_path = "D:\pycharm_codes\MCM2025_codes\clean_boys_data.csv"  # ← 修改为你本地路径
 df = pd.read_csv(csv_path)
 
 # ========== 数据处理 ==========
@@ -35,6 +41,9 @@ grouped = (
 )
 grouped["孕周_bin"] = grouped["孕周_bin"].astype(float)
 
+# 总样本数
+total_n = len(df_keep)
+
 # ========== 可视化 ==========
 plt.figure(figsize=(12, 6))
 plt.plot(
@@ -47,7 +56,7 @@ plt.plot(
     label="平均值"
 )
 
-# --- 拟合直线：孕周 > 20 ---
+# --- 拟合直线：孕周 >= 19 ---
 fit_data = grouped[grouped["孕周_bin"] >= 19]
 X = fit_data["孕周_bin"].values.reshape(-1, 1)
 y = fit_data["Y染色体浓度"].values
@@ -55,15 +64,15 @@ y = fit_data["Y染色体浓度"].values
 if len(X) > 1:
     model = LinearRegression().fit(X, y)
     y_pred = model.predict(X)
-    plt.plot(X, y_pred, color="red", linestyle="--", label="孕周>=19 拟合直线")
+    plt.plot(X, y_pred, color="red", linestyle="--", label=f"孕周>=19 拟合直线 (总样本数 n={total_n})")
 
 plt.xlabel("检测孕周（分箱中心点）")
 plt.ylabel("平均 Y 染色体浓度")
-plt.title("检测孕周与平均Y染色体浓度 (剔除 18–18.9、22–22.9，步长0.25)")
-plt.legend()
+plt.title("检测孕周与平均 Y 染色体浓度 (剔除 18–18.9、22–22.9，步长0.25)")
+plt.legend(fontsize=12)  # 放大图例字体
 plt.grid(True, alpha=0.3)
 
 # 保存 PDF（可选）
-plt.savefig("检测孕周与平均Y染色体浓度.pdf", format="pdf", bbox_inches="tight", dpi=300)
+plt.savefig("检测孕周与平均Y浓度.pdf", format="pdf", bbox_inches="tight", dpi=300)
 
 plt.show()

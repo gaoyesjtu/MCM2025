@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+孕妇 BMI 区间与平均 Y 浓度关系
+绘制折线图，显示总样本数，并加回归直线（不显示方程与 R²）
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,24 +38,26 @@ grouped2 = df_sub2.groupby("BMI_bin")["Y染色体浓度"].mean().reset_index()
 # 合并结果
 grouped_final = pd.concat([grouped1, grouped2], ignore_index=True).dropna()
 
+# 总样本数
+total_n = len(df)
+
 # --- 绘制图像 ---
 plt.figure(figsize=(10,6))
 plt.plot(grouped_final["BMI_bin"], grouped_final["Y染色体浓度"], marker="o", linestyle="-", label="平均值")
 
-# 线性拟合 (28–34)
+# 线性拟合 (28–33)
 fit_data = grouped_final[(grouped_final["BMI_bin"] >= 28) & (grouped_final["BMI_bin"] <= 33)]
 X = fit_data["BMI_bin"].values.reshape(-1, 1)
 y = fit_data["Y染色体浓度"].values
 model = LinearRegression().fit(X, y)
 y_pred = model.predict(X)
 
-plt.plot(X, y_pred, color="red", linestyle="--", label="BMI区间28–33拟合直线")
+plt.plot(X, y_pred, color="red", linestyle="--", label=f"BMI区间28–33 拟合直线 (总样本数 n={total_n})")
 
 plt.xlabel("孕妇BMI (区间中心点)")
 plt.ylabel("平均Y染色体浓度")
 plt.title("孕妇BMI区间与平均Y染色体浓度关系图")
-plt.legend()
+plt.legend(fontsize=12)  # 放大图例字体
 plt.grid(True)
 plt.savefig("BMI与平均Y染色体浓度.pdf", format="pdf", bbox_inches="tight")
 plt.show()
-
