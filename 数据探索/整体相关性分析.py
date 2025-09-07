@@ -30,6 +30,7 @@ BAR_H     = 0.34   # 条形高度
 SHIFT     = 0.42   # 组内三条的位移
 GROUP_GAP = 1.45   # 组间距缩放（>1 更松）
 FIG_W     = 9.0
+TOP_K = 6  # 只显示前 6 个
 # =================================
 
 # ---- 字体/导出设置（更稳健） ----
@@ -104,6 +105,7 @@ if res.empty:
 res = res.sort_values(["mutual_info","abs_spearman_rho","abs_kendall_tau"],
                       ascending=[False, False, False]).reset_index(drop=True)
 
+res = res.head(TOP_K).reset_index(drop=True)
 # —— 若出现 NaN，绘图用 0 显示并提示（避免整条不显示）——
 nan_cols = res.columns[2:]
 vis = res.copy()
@@ -127,7 +129,7 @@ b3 = ax.barh(ypos - SHIFT, vis["abs_kendall_tau"].values,
 ax.set_yticks(ypos)
 ax.set_yticklabels(res["feature"].values, fontsize=10)
 ax.set_xlabel("相关强度（非线性 / 非参数）", fontsize=11)
-ax.set_title(f"单变量相关强度对比（目标：{TARGET}）", fontsize=13, pad=10)
+ax.set_title(f"单变量相关强度Top6（目标：{TARGET}）", fontsize=13, pad=10)
 
 # 图例放画布内，防止被裁剪；加大句柄
 leg = ax.legend(loc="lower right", fontsize=10, handlelength=2.2, borderaxespad=0.8)

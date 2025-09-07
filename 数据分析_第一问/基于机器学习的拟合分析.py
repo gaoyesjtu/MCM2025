@@ -16,7 +16,7 @@ CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\clean_boys_data.csv"
 
 # === 读取数据 ===
 df = pd.read_csv(CSV_PATH, encoding="utf-8")
-X = df[["检测孕周", "孕妇BMI","体重", "年龄"]].to_numpy(dtype=np.float32)
+X = df[["检测孕周", "孕妇BMI","体重", "年龄","身高"]].to_numpy(dtype=np.float32)
 y = df["Y染色体浓度"].to_numpy(dtype=np.float32)
 
 # === 划分训练/验证 ===
@@ -26,8 +26,8 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 # === 训练 XGBoost ===
 xgb = XGBRegressor(
-    n_estimators=500,
-    learning_rate=0.05,
+    n_estimators=600,
+    learning_rate=0.04,
     max_depth=4,
     subsample=0.8,
     colsample_bytree=0.8,
