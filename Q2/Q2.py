@@ -27,7 +27,7 @@ def make_teal_palette(base="#019092", n=5):
     n 为需要的颜色数量（自动匹配组数）。
     """
     # 让前半更浅、后半更深
-    steps = np.linspace(0.5, -0.35, n)  # 正=变浅，负=变深
+    steps = np.linspace(0.75, -0.55, n)  # 正=变浅，负=变深
     out = []
     for s in steps:
         out.append(_lighten(base, s) if s >= 0 else _darken(base, -s))
@@ -162,7 +162,7 @@ class EnhancedMedicalRiskFunction:
 
         if late_times.size > 0:
             late_risks = [self.calculate_individual_risk(t, reach_time) for t in late_times]
-            ax.fill_between(late_times, late_risks, alpha=0.3, color='orange', label='晚期检测 (增强指数)')
+            ax.fill_between(late_times, late_risks, alpha=0.3, color='#5DBFE9', label='晚期检测 (增强指数)')
 
         ax.set_xlabel('检测时间 (周)')
         ax.set_ylabel('风险值')
@@ -729,9 +729,9 @@ class RobustBMIGroupingOptimizer:
         late_counts = [g['late_count'] for g in group_details]
 
         # 颜色（青绿色系）
-        early_col = _lighten("#019092", 0.45)  # 浅
+        early_col = _lighten("#019092", 0.65)  # 浅
         ontime_col = "#019092"  # 基准色
-        late_col = _darken("#019092", 0.35)  # 深
+        late_col = _darken("#019092", 0.55)  # 深
 
         bar_width = 0.6
         p1 = ax5.bar(group_ids, early_counts, bar_width, label='早期检测',

@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-单变量“相关强度”可视化（仅一张 PDF）：
-- 指标：互信息 MI、|Spearman ρ|、|Kendall τ|
-- 排序：按 MI 从强到弱
-- 配色：#0095FF（MI）、#019092（|ρ|）、#6FDCB5（|τ|）
-- 字体：微软雅黑（自动回退），白底 PDF，图例不被裁剪
-"""
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -15,8 +7,8 @@ from sklearn.feature_selection import mutual_info_regression
 from pathlib import Path
 
 # ============== 配置 ==============
-CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\数据清洗\clean_boys_data__onehot.csv"  # ← 用你的路径
-TARGET   = "Y染色体浓度"  # ← 目标列名
+CSV_PATH = r"D:\pycharm_codes\MCM2025_codes\数据清洗\clean_boys_data__onehot.csv"
+TARGET   = "Y染色体浓度"
 INCLUDE_FEATURES = [
     "检测孕周","孕妇BMI","年龄","身高","体重",
     "IVF妊娠_IUI（人工授精）","IVF妊娠_IVF（试管婴儿）","IVF妊娠_自然受孕",
@@ -31,14 +23,10 @@ SHIFT     = 0.42   # 组内三条的位移
 GROUP_GAP = 1.45   # 组间距缩放（>1 更松）
 FIG_W     = 9.0
 TOP_K = 6  # 只显示前 6 个
-# =================================
 
-# ---- 字体/导出设置（更稳健） ----
-# 首选微软雅黑，若系统没有则回退
 fallback_fonts = ["Microsoft YaHei", "SimHei", "PingFang SC", "Noto Sans CJK SC", "WenQuanYi Micro Hei"]
 matplotlib.rcParams["font.sans-serif"] = fallback_fonts
 matplotlib.rcParams["axes.unicode_minus"] = False
-# 让 PDF 嵌入可编辑文本并强制白底
 matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["savefig.facecolor"] = "white"
 matplotlib.rcParams["figure.facecolor"] = "white"
@@ -52,7 +40,6 @@ matplotlib.rcParams.update({
     "axes.grid": False
 })
 
-# 颜色（按你的要求）
 COLOR_MI       = "#0095FF"  # MI
 COLOR_SPEARMAN = "#019092"  # |ρ|
 COLOR_KENDALL  = "#6FDCB5"  # |τ|
@@ -152,3 +139,41 @@ plt.close()
 print("Saved:", Path(OUTFILE).resolve())
 if (nan_cols.size > 0) and vis[nan_cols].isna().any().any():
     print("注意：存在 NaN 指标，绘图时按 0 处理（仅用于显示）。请检查数据。")
+
+
+# 创建结果数据框
+res = pd.DataFrame(rows, columns=[
+    "feature", "n_effective", "abs_spearman_rho", "p_spearman",
+    "abs_kendall_tau", "p_kendall", "mutual_info"
+])
+
+if res.empty:
+    raise ValueError("有效特征集合为空（样本量不足、列名不匹配或全为 NaN）。")
+
+# 排序
+res = res.sort_values(["mutual_info","abs_spearman_rho","abs_kendall_tau"],
+                      ascending=[False, False, False]).reset_index(drop=True)
+
+# 输出结果到控制台
+print("=" * 80)
+print(f"目标变量: {TARGET}")
+print("=" * 80)
+print("特征与目标变量的相关性分析结果 (按互信息MI降序排列):")
+print("=" * 80)
+
+for idx, row in res.iterrows():
+    print(f"{idx+1}. {row['feature']}:")
+    print(f"   有效样本数: {row['n_effective']}")
+    print(f"   互信息(MI): {row['mutual_info']:.6f}")
+    print(f"   |Spearman ρ|: {row['abs_spearman_rho']:.6f} (p={row['p_spearman']:.6f})")
+    print(f"   |Kendall τ|: {row['abs_kendall_tau']:.6f} (p={row['p_kendall']:.6f})")
+    print("-" * 40)
+
+# 保存结果到CSV文件
+res.to_csv(OUTFILE, index=False, encoding='utf-8-sig')
+print(f"\n结果已保存到: {Path(OUTFILE).resolve()}")
+
+# 检查是否有NaN值
+nan_cols = res.columns[2:]
+if (nan_cols.size > 0) and res[nan_cols].isna().any().any():
+    print("注意：存在 NaN 指标，请检查数据。")

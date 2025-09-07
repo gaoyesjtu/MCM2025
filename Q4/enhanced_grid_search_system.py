@@ -42,7 +42,7 @@ class EnhancedGridSearchSystem:
         self.best_params = {}
         self.model_comparison = None
         
-    def load_and_preprocess_data(self, filepath='Q4/clean_girls_data_Q4.csv'):
+    def load_and_preprocess_data(self, filepath=r"D:\pycharm_codes\MCM2025_codes\Q4\Q4\clean_girls_data_Q4.csv"):
         """加载和预处理数据"""
         print("=== 数据加载和预处理 ===")
         
@@ -590,7 +590,7 @@ class EnhancedGridSearchSystem:
         
         # F1 Score比较
         bars1 = axes[0, 0].bar(comparison_df['Model'], comparison_df['F1_Score'], 
-                              color='skyblue', alpha=0.7)
+                              color='#91CDC8', alpha=0.7)
         axes[0, 0].set_title('F1 Score比较', fontsize=14, fontweight='bold')
         axes[0, 0].set_ylabel('F1 Score')
         axes[0, 0].tick_params(axis='x', rotation=45)
@@ -617,7 +617,7 @@ class EnhancedGridSearchSystem:
         
         # AUC比较
         bars3 = axes[0, 2].bar(comparison_df['Model'], comparison_df['AUC'], 
-                              color='lightgreen', alpha=0.7)
+                              color='#6FB9D0', alpha=0.7)
         axes[0, 2].set_title('AUC比较', fontsize=14, fontweight='bold')
         axes[0, 2].set_ylabel('AUC')
         axes[0, 2].tick_params(axis='x', rotation=45)
@@ -631,7 +631,7 @@ class EnhancedGridSearchSystem:
         
         # 交叉验证F1
         bars4 = axes[1, 0].bar(comparison_df['Model'], comparison_df['CV_F1'], 
-                              color='orange', alpha=0.7)
+                              color='#5499BD', alpha=0.7)
         axes[1, 0].set_title('交叉验证F1 Score', fontsize=14, fontweight='bold')
         axes[1, 0].set_ylabel('CV F1 Score')
         axes[1, 0].tick_params(axis='x', rotation=45)
@@ -645,7 +645,7 @@ class EnhancedGridSearchSystem:
         
         # 训练时间
         bars5 = axes[1, 1].bar(comparison_df['Model'], comparison_df['Training_Time'], 
-                              color='pink', alpha=0.7)
+                              color='#3981AF', alpha=0.7)
         axes[1, 1].set_title('训练时间 (秒)', fontsize=14, fontweight='bold')
         axes[1, 1].set_ylabel('时间 (秒)')
         axes[1, 1].tick_params(axis='x', rotation=45)
@@ -672,8 +672,8 @@ class EnhancedGridSearchSystem:
         best_values = best_values + [best_values[0]]
         
         axes[1, 2].plot(angles, best_values, 'o-', linewidth=3, 
-                       label=f'最佳模型: {best_model_name}', color='red')
-        axes[1, 2].fill(angles, best_values, alpha=0.25, color='red')
+                       label=f'最佳模型: {best_model_name}', color='#386195')
+        axes[1, 2].fill(angles, best_values, alpha=0.25, color='#386195')
         axes[1, 2].set_xticks(angles[:-1])
         axes[1, 2].set_xticklabels(metrics)
         axes[1, 2].set_title('最佳模型性能雷达图', fontsize=14, fontweight='bold')
@@ -756,12 +756,22 @@ class EnhancedGridSearchSystem:
         # 7. 特征重要性可视化
         if self.feature_importance is not None:
             plt.figure(figsize=(12, 8))
-            top_features = self.feature_importance.head(15)
-            bars = plt.barh(range(len(top_features)), top_features['Importance'], 
-                           color='steelblue', alpha=0.7)
+            top_features = self.feature_importance.head(10)
+
+            # 归一化重要性，用来映射颜色深浅
+            norm = (top_features['Importance'] - top_features['Importance'].min()) / \
+                   (top_features['Importance'].max() - top_features['Importance'].min())
+
+            # 这里用 Blues 渐变色，重要性大 = 深蓝，重要性小 = 浅蓝
+            colors = plt.cm.Blues(norm)
+
+            bars = plt.barh(range(len(top_features)),
+                            top_features['Importance'],
+                            color=colors, alpha=0.9)
+
             plt.yticks(range(len(top_features)), top_features['Feature'].tolist())
             plt.xlabel('重要性')
-            plt.title(f'{self.best_model_name} - 前15个最重要特征')
+            plt.title(f'{self.best_model_name} - 前10个最重要特征')
             plt.grid(True, alpha=0.3)
             
             # 添加数值标签
